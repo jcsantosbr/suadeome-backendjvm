@@ -20,8 +20,9 @@ import java.util.logging.Logger
 
 object App {
 
-    val logger = Logger.getLogger(this.javaClass.name)
+    val logger: Logger = Logger.getLogger(this.javaClass.name)
 
+    
     private val toJson = { model: Any -> createGson().toJson(model) }
 
     private fun createGson() : Gson {
