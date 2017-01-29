@@ -1,9 +1,11 @@
+[![Build Status](https://app.snap-ci.com/jcsantosbr/suadeome-backendjvm/branch/master/build_image)](https://app.snap-ci.com/jcsantosbr/suadeome-backendjvm/branch/master)
 # suadeome-backendjvm
 Suadeome Backend JVM - Backend for services portal in Java/Kotlin
 
-# stack
+Recommend services to friends 
 
-Java 8
-Kotlin 1.0.5
-Spark Web
-DBI
+# stack
+- Java 8
+- Kotlin 1.0.5
+- Spark Web
+- DBI
