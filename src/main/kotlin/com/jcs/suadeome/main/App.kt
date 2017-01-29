@@ -9,9 +9,9 @@ import com.jcs.suadeome.professionals.ServiceRepository
 import org.postgresql.ds.PGPoolingDataSource
 import org.skife.jdbi.v2.DBI
 import org.skife.jdbi.v2.Handle
+import spark.Filter
 import spark.Spark
-import spark.Spark.get
-import spark.Spark.post
+import spark.Spark.*
 import java.lang.Integer.parseInt
 import java.util.*
 import java.util.Optional.ofNullable
@@ -49,6 +49,8 @@ object App {
     private fun defineRoutes(dbi: DBI) {
 
         val generator = IdGenerator(Supplier { "" + System.nanoTime() })
+
+        enableCors()
 
         get("/professionals", { request, response ->
 
@@ -115,6 +117,38 @@ object App {
             }
 
         }, toJson)
+    }
+
+    private fun enableCors() {
+
+
+
+        options("/*", { request, response ->
+
+            val accessControlRequestHeaders = request.headers("Access-Control-Request-Headers")
+
+            if (accessControlRequestHeaders != null) {
+                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+            }
+
+            val accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+            if (accessControlRequestMethod != null) {
+                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+            }
+
+            response;
+        });
+
+        before( Filter {request, response ->
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Request-Method", "POST");
+            response.header("Access-Control-Request-Method", "GET");
+            response.header("Access-Control-Request-Method", "OPTIONS");
+//            response.header("Access-Control-Allow-Headers", "");
+            response.type("application/json");
+        });
+
+
     }
 
     private fun configureDB(): DBI {
