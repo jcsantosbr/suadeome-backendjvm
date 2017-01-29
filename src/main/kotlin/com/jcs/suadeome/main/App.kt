@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder
 import com.jcs.suadeome.generators.EntityType
 import com.jcs.suadeome.generators.IdGenerator
 import com.jcs.suadeome.professionals.ProfessionalRepository
+import com.jcs.suadeome.professionals.ServiceRepository
 import org.postgresql.ds.PGPoolingDataSource
 import org.skife.jdbi.v2.DBI
 import org.skife.jdbi.v2.Handle
@@ -93,6 +94,26 @@ object App {
 
             response
         }
+
+        get("/services", { request, response ->
+
+            try {
+                val prefix = request.queryParams("prefix").orEmpty()
+                val h = dbi.open()
+                val repository = ServiceRepository(h)
+
+                val services = repository.servicesByPrefix(prefix)
+
+                h.close()
+
+                services
+
+            } catch (e: Exception) {
+                logger.severe({ "/professionals -> " + e.message })
+                throw e
+            }
+
+        }, toJson)
     }
 
     private fun configureDB(): DBI {
