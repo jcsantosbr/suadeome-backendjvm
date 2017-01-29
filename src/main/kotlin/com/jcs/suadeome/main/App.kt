@@ -22,7 +22,7 @@ object App {
 
     val logger: Logger = Logger.getLogger(this.javaClass.name)
 
-    
+
     private val toJson = { model: Any -> createGson().toJson(model) }
 
     private fun createGson() : Gson {
