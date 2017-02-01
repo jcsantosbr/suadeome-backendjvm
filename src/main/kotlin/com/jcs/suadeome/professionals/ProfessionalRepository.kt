@@ -21,10 +21,10 @@ class ProfessionalRepository(val openHandle: Handle) {
     }
 
     fun rowToProfessional(row: Map<String, Any>): Professional {
-        val id = Id.id(row["id"].toString())
+        val id = Id(row["id"].toString())
         val name = row["name"].toString()
-        val phone = row["phone"].toString()
-        val service = row["service"].toString()
+        val phone = PhoneNumber(row["phone"].toString())
+        val service = Service(row["service"].toString())
 
         return Professional(id, name, phone, service)
     }

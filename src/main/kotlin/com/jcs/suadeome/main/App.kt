@@ -2,31 +2,30 @@ package com.jcs.suadeome.main
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.jcs.suadeome.generators.EntityType
 import com.jcs.suadeome.generators.IdGenerator
-import com.jcs.suadeome.professionals.ProfessionalRepository
-import com.jcs.suadeome.professionals.ServiceRepository
+import com.jcs.suadeome.professionals.Professional
+import com.jcs.suadeome.professionals.ProfessionalJsonSerializer
+import com.jcs.suadeome.professionals.ProfessionalResource
+import com.jcs.suadeome.types.EntityConstructionFailed
 import org.postgresql.ds.PGPoolingDataSource
 import org.skife.jdbi.v2.DBI
-import org.skife.jdbi.v2.Handle
 import spark.Filter
 import spark.Spark
 import spark.Spark.*
 import java.lang.Integer.parseInt
-import java.util.*
 import java.util.Optional.ofNullable
 import java.util.function.Supplier
 import java.util.logging.Logger
 
 object App {
 
-    val logger: Logger = Logger.getLogger(this.javaClass.name)
+    private val logger: Logger = Logger.getLogger(this.javaClass.name)
 
+    val toJson = { model: Any -> createGson().toJson(model) }
 
-    private val toJson = { model: Any -> createGson().toJson(model) }
-
-    private fun createGson() : Gson {
+    private fun createGson(): Gson {
         val builder = GsonBuilder()
+        builder.registerTypeAdapter(Professional::class.java, ProfessionalJsonSerializer())
         return builder.create()
     }
 
@@ -44,6 +43,7 @@ object App {
 
         Spark.ipAddress(ipAddress)
         Spark.port(port)
+        Spark.threadPool(14);
     }
 
     private fun defineRoutes(dbi: DBI) {
@@ -52,77 +52,29 @@ object App {
 
         enableCors()
 
-        get("/professionals", { request, response ->
-
-            try {
-                val searchedService = request.queryParams("service").orEmpty()
-                val h = dbi.open()
-                val repository = ProfessionalRepository(h)
-
-                val allProfessionals = repository.professionalsByService(searchedService)
-
-                h.close()
-
-                allProfessionals
-
-            } catch (e: Exception) {
-                logger.severe({ "/professionals -> " + e.message })
-                throw e
-            }
-
+        get("/", { request, response ->
+            //TODO: list of endpoints, needs to learn how to fetch from Spark
+            listOf("professionals", "services")
         }, toJson)
 
-        post("/professionals") { request, response ->
-            try {
-                val h: Handle = dbi.open()
-                val id = generator.generate(EntityType.PROFESSIONAL)
-                val name = request.queryParams("name").orEmpty()
-                val phone = request.queryParams("phone").orEmpty()
-                val service = request.queryParams("service").orEmpty()
+        ProfessionalResource.routesForProfessionals(dbi, generator)
 
-                h.createStatement("INSERT INTO professionals (id, name, phone, service, created_by, created_at) " + "VALUES (:id, :name, :phone, :service, :user, :now)")
-                        .bind("id", id.getValue())
-                        .bind("name", name)
-                        .bind("phone", phone)
-                        .bind("service", service)
-                        .bind("user", 1)
-                        .bind("now", Date())
-                        .execute()
+        exception(EntityConstructionFailed::class.java, { exception, request, response ->
+            response.status(400)
+            response.body(exception.message)
+        })
 
-                h.close()
-            } catch (e: Exception) {
-                logger.severe({ "/professionals -> " + e.message })
-                e.printStackTrace()
-            }
+        exception(Exception::class.java, { exception, request, response ->
+            response.status(500)
+            response.body("Something bad happened! Sorry")
 
-            response
-        }
+            exception.printStackTrace()
+            logger.severe { exception.message }
+        })
 
-        get("/services", { request, response ->
-
-            try {
-                val prefix = request.queryParams("prefix").orEmpty()
-                val h = dbi.open()
-                val repository = ServiceRepository(h)
-
-                val services = repository.servicesByPrefix(prefix)
-
-                h.close()
-
-                services
-
-            } catch (e: Exception) {
-                logger.severe({ "/professionals -> " + e.message })
-                throw e
-            }
-
-        }, toJson)
     }
 
     private fun enableCors() {
-
-
-
         options("/*", { request, response ->
 
             val accessControlRequestHeaders = request.headers("Access-Control-Request-Headers")
@@ -137,18 +89,15 @@ object App {
             }
 
             response;
-        });
+        })
 
-        before( Filter {request, response ->
+        before(Filter { request, response ->
             response.header("Access-Control-Allow-Origin", "*");
             response.header("Access-Control-Request-Method", "POST");
             response.header("Access-Control-Request-Method", "GET");
             response.header("Access-Control-Request-Method", "OPTIONS");
-//            response.header("Access-Control-Allow-Headers", "");
             response.type("application/json");
-        });
-
-
+        })
     }
 
     private fun configureDB(): DBI {
@@ -171,6 +120,5 @@ object App {
     private fun getEnv(property: String, defaultValue: String): String {
         return ofNullable(System.getenv(property)).orElse(defaultValue)
     }
-
 }
 
