@@ -2,6 +2,7 @@ package com.jcs.suadeome.main
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.jcs.suadeome.context.RouteFactory
 import com.jcs.suadeome.generators.IdGenerator
 import com.jcs.suadeome.professionals.Professional
 import com.jcs.suadeome.professionals.ProfessionalJsonSerializer
@@ -13,6 +14,8 @@ import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGPoolingDataSource
 import org.skife.jdbi.v2.DBI
 import spark.Filter
+import spark.ResponseTransformer
+import spark.Route
 import spark.Spark
 import spark.Spark.*
 import java.lang.Integer.parseInt
@@ -24,7 +27,7 @@ object App {
 
     private val logger: Logger = Logger.getLogger(this.javaClass.name)
 
-    val toJson = { model: Any -> createGson().toJson(model) }
+    val toJson : ResponseTransformer = ResponseTransformer { model: Any -> createGson().toJson(model) }
 
     private fun createGson(): Gson {
         val builder = GsonBuilder()
@@ -61,17 +64,19 @@ object App {
 
     private fun defineRoutes(dbi: DBI) {
 
+        val routeFactory = RouteFactory(dbi)
+
         val generator = IdGenerator(Supplier { "" + System.nanoTime() })
 
         enableCors()
 
-        get("/", { request, response ->
+        get("/", Route { request, response ->
             //TODO: list of endpoints, needs to learn how to fetch from Spark
             listOf("professionals", "services")
         }, toJson)
 
-        ProfessionalResource.routesForProfessionals(dbi, generator)
-        ServiceResource.routesForResource(dbi, generator)
+        ProfessionalResource.routesForProfessionals(routeFactory)
+        ServiceResource.routesForResource(routeFactory)
 
         exception(EntityConstructionFailed::class.java, { exception, request, response ->
             response.status(400)

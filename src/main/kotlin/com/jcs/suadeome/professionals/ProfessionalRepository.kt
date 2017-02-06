@@ -7,9 +7,9 @@ import java.util.*
 
 class ProfessionalRepository(val openHandle: Handle) {
 
-    fun professionalsByService(services : List<Service>): List<Professional> {
+    fun professionalsByService(services: List<Service>): List<Professional> {
 
-        if ( services.isEmpty()) return Collections.emptyList()
+        if (services.isEmpty()) return Collections.emptyList()
 
         val placeHolders = services.mapIndexed { i, service -> ":id$i" }.joinToString(",")
         val whereClause = if (placeHolders.isBlank()) "" else "WHERE service_id IN ( $placeHolders )"
@@ -32,13 +32,29 @@ class ProfessionalRepository(val openHandle: Handle) {
         return professionals
     }
 
-    fun rowToProfessional(row: Map<String, Any>): Professional {
+    private fun rowToProfessional(row: Map<String, Any>): Professional {
         val id = Id(row["id"].toString())
         val name = row["name"].toString()
         val phone = PhoneNumber(row["phone"].toString())
         val serviceId = Id(row["service_id"].toString())
 
         return Professional(id, name, phone, serviceId)
+    }
+
+    fun createProfessional(professional: Professional) {
+        val query = """
+            INSERT INTO professionals (id, name, phone, service_id, created_by, created_at)
+            VALUES (:id, :name, :phone, :serviceId, :user, :now)
+        """
+
+        openHandle.createStatement(query)
+                .bind("id", professional.id.value)
+                .bind("name", professional.name)
+                .bind("phone", professional.phone.number)
+                .bind("serviceId", professional.serviceId.value)
+                .bind("user", 1)
+                .bind("now", Date())
+                .execute()
     }
 
 }
