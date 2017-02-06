@@ -7,6 +7,7 @@ import com.jcs.suadeome.professionals.Professional
 import com.jcs.suadeome.professionals.ProfessionalJsonSerializer
 import com.jcs.suadeome.professionals.ProfessionalResource
 import com.jcs.suadeome.types.EntityConstructionFailed
+import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGPoolingDataSource
 import org.skife.jdbi.v2.DBI
 import spark.Filter
@@ -30,11 +31,20 @@ object App {
     }
 
     @JvmStatic fun main(args: Array<String>) {
+
+        upgradeDB()
+
         configureSpark()
 
         val dbi = configureDB()
 
         defineRoutes(dbi)
+    }
+
+    private fun upgradeDB() {
+        val flyway = Flyway()
+        flyway.setDataSource(DbConfig.url(), DbConfig.username(), DbConfig.password())
+        flyway.migrate()
     }
 
     private fun configureSpark() {
@@ -102,12 +112,11 @@ object App {
 
     private fun configureDB(): DBI {
         val connectionPool = PGPoolingDataSource()
+
         connectionPool.applicationName = "suadeome"
-        connectionPool.serverName = getEnv("OPENSHIFT_POSTGRESQL_DB_HOST", "localhost")
-        connectionPool.portNumber = getIntEnv("OPENSHIFT_POSTGRESQL_DB_PORT", 5432)
-        connectionPool.databaseName = "suadeome"
-        connectionPool.user = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_USER", "suadeome")
-        connectionPool.password = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_PASSWORD", "suadeome")
+        connectionPool.url = DbConfig.url()
+        connectionPool.user = DbConfig.username()
+        connectionPool.password = DbConfig.password()
         connectionPool.maxConnections = 10
 
         return DBI(connectionPool)
@@ -120,5 +129,12 @@ object App {
     private fun getEnv(property: String, defaultValue: String): String {
         return ofNullable(System.getenv(property)).orElse(defaultValue)
     }
+
+    object DbConfig {
+        fun url(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_HOST", "jdbc:postgresql://localhost:5432/suadeome")
+        fun username(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_USER", "suadeome")
+        fun password(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_PASSWORD", "suadeome")
+    }
+
 }
 
