@@ -3,7 +3,6 @@ package com.jcs.suadeome.main
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.jcs.suadeome.context.RouteFactory
-import com.jcs.suadeome.generators.IdGenerator
 import com.jcs.suadeome.professionals.Professional
 import com.jcs.suadeome.professionals.ProfessionalJsonSerializer
 import com.jcs.suadeome.professionals.ProfessionalResource
@@ -20,7 +19,6 @@ import spark.Spark
 import spark.Spark.*
 import java.lang.Integer.parseInt
 import java.util.Optional.ofNullable
-import java.util.function.Supplier
 import java.util.logging.Logger
 
 object App {
@@ -63,10 +61,7 @@ object App {
     }
 
     private fun defineRoutes(dbi: DBI) {
-
         val routeFactory = RouteFactory(dbi)
-
-        val generator = IdGenerator(Supplier { "" + System.nanoTime() })
 
         enableCors()
 

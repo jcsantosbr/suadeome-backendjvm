@@ -1,18 +1,20 @@
 package com.jcs.suadeome.generators
 
 import com.jcs.suadeome.types.Id
+import java.time.format.DateTimeFormatter
 
-import java.util.function.Supplier
-
-class IdGenerator(private val value: Supplier<String>) {
+class IdGenerator(private val clock: Clock, val random: Random) {
 
     fun generate(type: EntityType): Id {
-        return Id(type.idPrefix + value.get())
+        val timestamp = clock.utcNow().format( DateTimeFormatter.ofPattern("yyDDDHHmmssSSS") )
+        val random = random.random(100..999)
+        return Id(type.idPrefix + timestamp + random)
     }
 
     companion object {
-        val DEFAULT_GENERATOR = Supplier { "" + System.nanoTime() }
+        fun default(): IdGenerator = IdGenerator(RealClock(), RealRandom() )
     }
+
 
 }
 

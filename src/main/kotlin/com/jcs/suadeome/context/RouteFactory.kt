@@ -10,20 +10,20 @@ import spark.Route
 
 class RouteFactory(val dbi: DBI) {
 
-    fun inContext(function: (request: Request, response: Response, context: Context) -> Any ): Route {
+    fun inContext(function: (request: Request, response: Response, context: Context) -> Any): Route {
         return Route { request: Request, response: Response ->
-            val generator = IdGenerator(IdGenerator.DEFAULT_GENERATOR)
 
             val openHandle = dbi.open()
-            openHandle.begin()
+
+            val context = Context(
+                    generator = IdGenerator.default(),
+                    serviceRepository = ServiceRepository(openHandle, IdGenerator.default()),
+                    professionalRepository = ProfessionalRepository(openHandle)
+            )
 
             try {
 
-                val serviceRepository = ServiceRepository(openHandle, generator)
-
-                val professionalRepository = ProfessionalRepository(openHandle)
-
-                val context = Context(generator, serviceRepository, professionalRepository)
+                openHandle.begin()
 
                 val result = function(request, response, context)
 
@@ -38,8 +38,6 @@ class RouteFactory(val dbi: DBI) {
             }
         }
     }
-
-
 
 }
 
