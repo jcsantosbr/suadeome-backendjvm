@@ -1,19 +1,31 @@
 package com.jcs.suadeome.professionals
 
+import com.jcs.suadeome.services.Service
 import com.jcs.suadeome.types.Id
 import org.skife.jdbi.v2.Handle
+import java.util.*
 
 class ProfessionalRepository(val openHandle: Handle) {
 
-    fun professionalsByService(service: String): List<Professional> {
-        val rows = openHandle.createQuery("""
-                SELECT id, name, phone, service
+    fun professionalsByService(services : List<Service>): List<Professional> {
+
+        if ( services.isEmpty()) return Collections.emptyList()
+
+        val placeHolders = services.mapIndexed { i, service -> ":id$i" }.joinToString(",")
+        val whereClause = if (placeHolders.isBlank()) "" else "WHERE service_id IN ( $placeHolders )"
+
+        val query = openHandle.createQuery("""
+                SELECT id, name, phone, service_id
                 FROM professionals
-                WHERE service = :service
+                $whereClause
                 ORDER BY name
                 """)
-                .bind("service", service)
-                .list()
+
+        services.forEachIndexed { i, service ->
+            query.bind("id$i", service.id.value)
+        }
+
+        val rows = query.list()
 
         val professionals = rows.map { rowToProfessional(it) }
 
@@ -24,9 +36,9 @@ class ProfessionalRepository(val openHandle: Handle) {
         val id = Id(row["id"].toString())
         val name = row["name"].toString()
         val phone = PhoneNumber(row["phone"].toString())
-        val service = Service(row["service"].toString())
+        val serviceId = Id(row["service_id"].toString())
 
-        return Professional(id, name, phone, service)
+        return Professional(id, name, phone, serviceId)
     }
 
 }

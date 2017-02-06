@@ -6,6 +6,8 @@ import com.jcs.suadeome.generators.IdGenerator
 import com.jcs.suadeome.professionals.Professional
 import com.jcs.suadeome.professionals.ProfessionalJsonSerializer
 import com.jcs.suadeome.professionals.ProfessionalResource
+import com.jcs.suadeome.services.Service
+import com.jcs.suadeome.services.ServiceResource
 import com.jcs.suadeome.types.EntityConstructionFailed
 import org.flywaydb.core.Flyway
 import org.postgresql.ds.PGPoolingDataSource
@@ -27,6 +29,7 @@ object App {
     private fun createGson(): Gson {
         val builder = GsonBuilder()
         builder.registerTypeAdapter(Professional::class.java, ProfessionalJsonSerializer())
+        builder.registerTypeAdapter(Service::class.java, Service.ServiceJsonSerializer())
         return builder.create()
     }
 
@@ -68,6 +71,7 @@ object App {
         }, toJson)
 
         ProfessionalResource.routesForProfessionals(dbi, generator)
+        ServiceResource.routesForResource(dbi, generator)
 
         exception(EntityConstructionFailed::class.java, { exception, request, response ->
             response.status(400)

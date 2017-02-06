@@ -7,7 +7,7 @@ import com.google.gson.JsonSerializer
 import com.jcs.suadeome.types.Id
 import java.lang.reflect.Type
 
-data class Professional(val id: Id, val name: String, val phone: PhoneNumber, val service: Service)
+data class Professional(val id: Id, val name: String, val phone: PhoneNumber, val serviceId: Id)
 
 class ProfessionalJsonSerializer : JsonSerializer<Professional> {
     override fun serialize(src: Professional, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
@@ -16,7 +16,7 @@ class ProfessionalJsonSerializer : JsonSerializer<Professional> {
         obj.addProperty("id", src.id.value)
         obj.addProperty("name", src.name)
         obj.addProperty("phone", src.phone.number)
-        obj.addProperty("service", src.service.name)
+        obj.addProperty("service_id", src.serviceId.value)
         return obj
     }
 }

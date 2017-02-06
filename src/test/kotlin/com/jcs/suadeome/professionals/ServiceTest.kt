@@ -1,7 +1,8 @@
 package com.jcs.suadeome.professionals
 
-import org.hamcrest.CoreMatchers
-import org.junit.Assert
+import com.jcs.suadeome.services.Service
+import org.hamcrest.CoreMatchers.equalTo
+import org.junit.Assert.assertThat
 import org.junit.Test
 
 class ServiceTest {
@@ -15,7 +16,7 @@ class ServiceTest {
         )
 
         outputByInput.entries.forEach { entry ->
-            Assert.assertThat(Service(entry.key).id, CoreMatchers.equalTo(entry.value))
+            assertThat(Service.normalizeName(entry.key), equalTo(entry.value))
         }
     }
 }
