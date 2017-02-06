@@ -135,7 +135,13 @@ object App {
     }
 
     object DbConfig {
-        fun url(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_HOST", "jdbc:postgresql://localhost:5432/suadeome")
+        fun url(): String {
+            val host = getEnv("OPENSHIFT_POSTGRESQL_DB_HOST", "localhost")
+            val port = getEnv("OPENSHIFT_POSTGRESQL_DB_PORT", "5432")
+
+            return "jdbc:postgresql://$host:$port/suadeome"
+        }
+
         fun username(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_USER", "suadeome")
         fun password(): String = getEnv("OPENSHIFT_POSTGRESQL_DB_APP_PASSWORD", "suadeome")
     }
