@@ -1,5 +1,6 @@
 package com.jcs.suadeome.context
 
+import com.google.gson.JsonParser
 import com.jcs.suadeome.generators.IdGenerator
 import com.jcs.suadeome.professionals.ProfessionalRepository
 import com.jcs.suadeome.services.ServiceRepository
@@ -10,36 +11,59 @@ import spark.Route
 
 class RouteFactory(val dbi: DBI) {
 
-    fun inContext(function: (request: Request, response: Response, context: Context) -> Any): Route {
+    fun inContext(function: (request: SimpleRequest, context: Context) -> Any): Route {
         return Route { request: Request, response: Response ->
-
-            val openHandle = dbi.open()
+            val handle = dbi.open()
 
             val context = Context(
                     generator = IdGenerator.default(),
-                    serviceRepository = ServiceRepository(openHandle, IdGenerator.default()),
-                    professionalRepository = ProfessionalRepository(openHandle)
+                    serviceRepository = ServiceRepository(handle, IdGenerator.default()),
+                    professionalRepository = ProfessionalRepository(handle)
             )
 
+            val simpleRequest = SparkSimpleRequest(request)
+
             try {
+                handle.begin()
 
-                openHandle.begin()
+                val result = function(simpleRequest, context)
 
-                val result = function(request, response, context)
-
-                openHandle.commit()
+                handle.commit()
 
                 result
             } catch (e: Exception) {
-                openHandle.rollback()
+                handle.rollback()
                 throw e
             } finally {
-                openHandle.close()
+                handle.close()
             }
         }
     }
 
 }
 
+interface SimpleRequest {
+    fun stringParam(name:String):String
+    fun intParam(name:String):Int
+}
+
+private class SparkSimpleRequest(val request: Request) : SimpleRequest {
+
+    var readParam: (param:String) -> String
+
+    init {
+        val body = request.body()
+        try {
+            val json = JsonParser().parse(body).asJsonObject
+            readParam = { p -> json[p].asString  }
+        } catch (e:Exception) {
+            readParam = { p -> request.queryParams(p).orEmpty()  }
+        }
+    }
+
+    override fun stringParam(name: String): String = readParam(name)
+
+    override fun intParam(name: String): Int = readParam(name).toInt()
+}
 
 

@@ -7,8 +7,8 @@ import spark.Spark
 object ServiceResource {
 
     fun routesForResource(routeFactory: RouteFactory) {
-        Spark.get("/services", routeFactory.inContext { request, response, context ->
-            val prefix = request.queryParams("prefix").orEmpty()
+        Spark.get("/services", routeFactory.inContext { request, context ->
+            val prefix = request.stringParam("prefix")
             context.serviceRepository.servicesByPrefix(prefix)
         }, App.toJson)
     }
